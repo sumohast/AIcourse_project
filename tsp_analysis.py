@@ -4,6 +4,7 @@
 این فایل تحلیل کامل عملکرد الگوریتم‌ها را ارائه می‌دهد.
 """
 
+
 import time
 import random
 import math
@@ -23,7 +24,12 @@ def print_header(text, char="=", width=60):
     print(f"{char}{' ' * pad}{text}{' ' * pad}{char}")
     print(f"{char * width}")
 
+"""  
+    این مهم‌ترین تابع گزارش‌گیری است.
 
+    هدف:
+    اجرای همه الگوریتم‌ها روی یک گراف یکسان و مقایسه نتایج آن‌ها.
+"""
 def compare_algorithms(graph: TSPGraph, verbose=True) -> dict:
     """اجرا و مقایسه همه الگوریتم‌ها"""
     results = {}
@@ -38,6 +44,7 @@ def compare_algorithms(graph: TSPGraph, verbose=True) -> dict:
     if n <= 10:
         algorithms.insert(0, ("Brute Force", brute_force))
 
+
     if verbose:
         print(f"\n{'─'*60}")
         print(f"  تعداد شهرها: {n}")
@@ -45,6 +52,7 @@ def compare_algorithms(graph: TSPGraph, verbose=True) -> dict:
         print(f"{'─'*60}")
 
     for name, fn in algorithms:
+        
         result = fn(graph)
         results[name] = result
         if verbose:
@@ -56,6 +64,18 @@ def compare_algorithms(graph: TSPGraph, verbose=True) -> dict:
             print(f"    زمان   : {result.elapsed:.6f} ثانیه")
             print(f"    تکرار  : {result.iterations}")
             print(f"    مسیر   : {tour_str}")
+            """
+            بعد چاپ می‌کند:
+
+                هزینه
+
+                زمان اجرا
+
+                تعداد تکرار
+
+                مسیر
+
+            """
 
     if verbose and results:
         best_name = min(results, key=lambda k: results[k].best_cost)
@@ -80,6 +100,7 @@ def benchmark_scalability(city_counts=(5, 8, 10, 15, 20), trials=3):
 
     data = {}
     for n in city_counts:
+        "یک گراف تصادفی می‌سازد."
         row_times = []
         for algo_name in algo_names:
             algo_fn = {
@@ -90,6 +111,7 @@ def benchmark_scalability(city_counts=(5, 8, 10, 15, 20), trials=3):
             }[algo_name]
 
             times = []
+            "برای هر الگوریتم چند بار اجرا می‌شود:"
             for seed in range(trials):
                 g = TSPGraph()
                 g.generate_random(n, seed=seed * 100)
@@ -169,6 +191,15 @@ if __name__ == "__main__":
     # ─── مثال ۲: شهرهای تصادفی ───
     print_header("مثال ۲: ۸ شهر تصادفی", char="─")
     g2 = TSPGraph()
+    """
+    seed=42
+
+        باعث می‌شود که اعداد تصادفی همیشه یکسان باشند.
+
+        یعنی هر بار برنامه اجرا شود، دقیقاً همان ۸ شهر تولید می‌شوند.
+
+        این موضوع برای آزمایش و مقایسه الگوریتم‌ها اهمیت زیادی دارد.
+    """
     g2.generate_random(8, seed=42)
     compare_algorithms(g2)
 

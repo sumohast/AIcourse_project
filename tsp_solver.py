@@ -10,7 +10,7 @@ TSP (Traveling Salesman Problem) - پروژه فروشنده دوره‌گرد
 6. Simulated Annealing — بازپخت شبیه‌سازی‌شده
 7. Genetic Algorithm — الگوریتم ژنتیک
 """
-
+  
 import itertools
 import random
 import math
@@ -186,6 +186,17 @@ def brute_force(graph: TSPGraph) -> TSPResult:
     تضمین بهینه: بله
     """
     result = TSPResult("Brute Force")
+    """
+        بهترین مسیر
+
+        کمترین هزینه
+
+        تعداد بررسی‌ها
+
+        زمان اجرا
+
+        تاریخچه جواب‌ها
+    """
     cities = graph.cities
     n = len(cities)
     if n > 13:
@@ -195,13 +206,22 @@ def brute_force(graph: TSPGraph) -> TSPResult:
     start = cities[0]
     others = cities[1:]
 
+    """
+    exm:
+        start = A
+        perm = (C,D,B)
+
+        tour=[A,C,D,B]
+    """
     for perm in itertools.permutations(others):
         tour = [start] + list(perm)
         cost = graph.tour_cost(tour)
         result.iterations += 1
         if cost < result.best_cost:
             result.best_cost = cost
-            result.best_tour = tour[:]
+
+            "ذخیره بهترین مسیر"
+            result.best_tour = tour[:]  
             result.tour_history.append(tour[:])
         result.cost_history.append(result.best_cost)
 
@@ -227,10 +247,13 @@ def greedy_search(graph: TSPGraph, start: str = None) -> TSPResult:
     t0 = time.perf_counter()
     current = start if (start and start in cities) else cities[0]
     tour = [current]
+
+    "استفاده از set باعث می‌شود حذف و جستجو سریع‌تر انجام شود."
     unvisited = set(cities) - {current}
 
     while unvisited:
         # پیدا کردن نزدیک‌ترین شهر ندیده
+        "lambda هم فقط مشخص می‌کند معیار مقایسه، فاصله از شهر فعلی باشد."
         nearest = min(unvisited, key=lambda c: graph.distance(current, c))
         tour.append(nearest)
         unvisited.remove(nearest)
@@ -242,8 +265,10 @@ def greedy_search(graph: TSPGraph, start: str = None) -> TSPResult:
 
     result.best_tour = tour
     result.best_cost = graph.tour_cost(tour)
+    "اگر قبلاً هزینه‌هایی ذخیره شده باشند، آخرین مقدار با هزینه واقعی مسیر نهایی جایگزین می‌شود تا تاریخچه دقیق باشد."
     if result.cost_history:
         result.cost_history[-1] = result.best_cost
+        "اگر فقط یک شهر وجود داشته باشد و حلقه اجرا نشود، حداقل هزینه نهایی در تاریخچه قرار می‌گیرد."
     else:
         result.cost_history = [result.best_cost]
     result.elapsed = time.perf_counter() - t0
@@ -254,17 +279,40 @@ def greedy_search(graph: TSPGraph, start: str = None) -> TSPResult:
 # 3. A* Search
 # ══════════════════════════════════════════════
 
+"""
+    remaining → شهرهای باقی‌مانده
+
+    current → شهر فعلی
+
+    graph → گراف
+
+    start → شهر شروع
+"""
 def _mst_heuristic(remaining: frozenset, current: str, graph: TSPGraph, start: str) -> float:
     """
     هیوریستیک A*: وزن درخت پوشای کمینه (MST) شهرهای باقی‌مانده
     + کمترین یال از current به آنها + کمترین یال از آنها به start
     این هیوریستیک admissible است (هرگز بیش‌برآورد نمی‌کند)
     """
+
+    """
+    f(n) = g(n) + h(n)
+
+        که در آن:
+
+            g(n) = هزینه‌ای که تا الان طی کرده‌ایم.
+
+            h(n) = تخمین هزینه باقی‌مانده تا پایان.
+
+            f(n) = هزینه کل تخمینی.
+
+    """
     if not remaining:
         return graph.distance(current, start)
 
     nodes = list(remaining) + [current, start]
     # Prim's MST
+    "الگوریتم Minimum spanning tree از شهر فعلی شروع می‌شود."
     visited = {current}
     edges = []
     for c in remaining:
@@ -312,11 +360,13 @@ def a_star(graph: TSPGraph, max_nodes: int = 50_000) -> TSPResult:
 
     t0 = time.perf_counter()
     start = cities[0]
+    #استفاده از frozenset باعث می‌شود مجموعه غیرقابل تغییر (Immutable) باشد و بتوان از آن به‌عنوان وضعیت (State) در الگوریتم استفاده کرد.
     remaining_all = frozenset(cities[1:])
 
     # حالت: (g, h, current_city, visited_frozenset, path)
     h0 = _mst_heuristic(remaining_all, start, graph, start)
     heap = [(h0, 0.0, start, remaining_all, [start])]
+            #(f,g,current,remaining,path)
     best_complete = float('inf')
 
     while heap and result.nodes_explored < max_nodes:
@@ -357,9 +407,20 @@ def a_star(graph: TSPGraph, max_nodes: int = 50_000) -> TSPResult:
 # ══════════════════════════════════════════════
 # 4. Local Beam Search
 # ══════════════════════════════════════════════
+"""
+    بهترین مسیر
 
+    بهترین هزینه
+
+    تعداد تکرارها
+
+    زمان اجرا
+
+    تاریخچه مسیرها
+"""
 def local_beam_search(graph: TSPGraph, k: int = 8,
                        max_iter: int = 500) -> TSPResult:
+    
     """
     جستجوی پرتو محلی — k حالت موازی نگه می‌دارد
     پیچیدگی زمانی: O(max_iter × k × n²)
@@ -373,8 +434,15 @@ def local_beam_search(graph: TSPGraph, k: int = 8,
 
     def neighbors_2opt(tour):
         """همسایه‌های 2-opt"""
+        "تمام مسیرهای جدید داخل این لیست ذخیره می‌شوند."
         nbrs = []
+        "نقطه شروع برش را انتخاب می‌کند."
         for i in range(1, n - 1):
+            """
+            نقطه پایان برش را انتخاب می‌کند.
+
+            پس تمام ترکیب‌های ممکن بررسی می‌شوند. 
+            """
             for j in range(i + 1, n):
                 new = tour[:i] + tour[i:j+1][::-1] + tour[j+1:]
                 nbrs.append(new)
@@ -389,6 +457,7 @@ def local_beam_search(graph: TSPGraph, k: int = 8,
 
         # تولید همه همسایه‌ها از همه پرتوها
         all_neighbors = []
+        "برای هر مسیر، تمام همسایه‌های 2-opt تولید می‌شوند."
         for beam in beams:
             for nb in neighbors_2opt(beam):
                 all_neighbors.append((graph.tour_cost(nb), nb))
@@ -397,6 +466,7 @@ def local_beam_search(graph: TSPGraph, k: int = 8,
             break
 
         # انتخاب k بهترین
+        "همه همسایه‌ها بر اساس هزینه مرتب می‌شوند."
         all_neighbors.sort(key=lambda x: x[0])
         top_k = all_neighbors[:k]
         beams = [t for _, t in top_k]
@@ -420,7 +490,18 @@ def local_beam_search(graph: TSPGraph, k: int = 8,
 # ══════════════════════════════════════════════
 # 5. Hill Climbing (2-opt + Random Restart)
 # ══════════════════════════════════════════════
+"تعداد دفعاتی که الگوریتم از یک مسیر تصادفی جدید شروع می‌کند."
+"""برای ذخیره:
 
+    بهترین مسیر
+
+    بهترین هزینه
+
+    زمان اجرا
+
+    تعداد تکرارها
+
+"""
 def hill_climbing(graph: TSPGraph, restarts: int = 30) -> TSPResult:
     """
     صعود تپه با راه‌اندازی مجدد تصادفی
@@ -454,18 +535,8 @@ def simulated_annealing(graph: TSPGraph,
                          T_init: float = None,
                          T_min:  float = 0.01,
                          alpha:  float = 0.995,
-                         inner:  int = None) -> TSPResult:
-    """
-    بازپخت شبیه‌سازی‌شده
-    پیچیدگی: O(log(T_init/T_min)/log(1/alpha) × inner × n)
-
-    اصلاحات نسبت به نسخه قبل:
-      • T_init به‌صورت خودکار از میانگین فاصله‌ها محاسبه می‌شود
-        (دیگر ثابت ۱۰۰۰ نیست — با مقیاس داده هماهنگ است)
-      • inner به‌صورت خودکار = n×3 (نه ثابت ۱۰۰)
-        (سرعت ۳× بیشتر در همان کیفیت)
-      • محافظت از سرریز math.exp با کلمپ delta/T
-    """
+                         inner:  int = None) -> TSPResult: #تعداد دفعات بررسی همسایه‌ها در هر دما
+    
     result = TSPResult("Simulated Annealing")
     cities = graph.cities
     n = len(cities)
@@ -490,7 +561,7 @@ def simulated_annealing(graph: TSPGraph,
     if inner is None:
         inner = max(20, n * 3)
 
-    # شروع از جواب حریصانه برای شتاب بهتر
+    # این باعث سریع‌تر شدن همگرایی می‌شود.
     gr = greedy_search(graph)
     current = gr.best_tour[:]
     current_cost = gr.best_cost
@@ -526,6 +597,12 @@ def simulated_annealing(graph: TSPGraph,
                 current, current_cost = neighbor, nc
             else:
                 # محافظت از سرریز: اگر delta/T خیلی بزرگ بود exp→0
+                """
+
+دما (T) بیشتر باشد، احتمال قبول مسیر بدتر بیشتر است.
+
+اختلاف هزینه (delta) بیشتر باشد، احتمال قبول کمتر می‌شود.
+"""
                 exponent = -delta / T
                 if exponent > -500 and random.random() < math.exp(exponent):
                     current, current_cost = neighbor, nc
@@ -557,6 +634,17 @@ def genetic_algorithm(graph: TSPGraph,
     الگوریتم ژنتیک با OX Crossover و جهش ترکیبی
     پیچیدگی: O(generations × pop_size × n)
     """
+
+    """برای ذخیره
+
+    بهترین مسیر
+
+    بهترین هزینه
+
+    تعداد نسل‌ها
+
+    زمان اجرا
+"""
     result = TSPResult("Genetic Algorithm")
     cities = graph.cities
     n = len(cities)

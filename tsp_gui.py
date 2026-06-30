@@ -10,7 +10,7 @@ TSP — رابط گرافیکی کامل
   • ورودی دستی، تصادفی و نمونه
   • خروجی متنی قابل کپی
 """
-
+ 
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
 import math
